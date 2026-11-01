@@ -43,7 +43,7 @@ export default function EventFeed() {
 
   const fetchEvents = async () => {
     try {
-      const response = await axios.get('http://localhost:8000/events/', { params: { search, category } });
+      const response = await axios.get('http://localhost:8000/events', { params: { search, category } });
       setEvents(response.data);
     } catch (error) { console.error(error); }
   };

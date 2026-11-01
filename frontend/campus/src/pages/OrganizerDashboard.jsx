@@ -146,7 +146,16 @@ export default function OrganizerDashboard() {
           <div className="row">
             <div className="col-md-6 mb-3">
               <label className="form-label fw-semibold">Date & Time</label>
-              <input type="datetime-local" className="form-control" required value={form.date} onChange={e => setForm({...form, date: e.target.value})} />
+              {/* Added onClick to force the calendar to pop up when the field is clicked */}
+              <input 
+                type="datetime-local" 
+                className="form-control" 
+                style={{ cursor: 'pointer' }}
+                required 
+                value={form.date} 
+                onChange={e => setForm({...form, date: e.target.value})}
+                onClick={(e) => e.target.showPicker && e.target.showPicker()} 
+              />
             </div>
             <div className="col-md-6 mb-3">
               <label className="form-label fw-semibold">Venue</label>

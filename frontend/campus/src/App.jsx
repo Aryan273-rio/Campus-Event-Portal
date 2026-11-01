@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react-router-dom';
+import { Routes, Route, Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import EventFeed from './pages/EventFeed';
 import OrganizerDashboard from './pages/OrganizerDashboard';
@@ -41,7 +41,8 @@ function Navigation() {
 
   return (
     <nav className={`navbar navbar-expand-lg ${darkMode ? 'navbar-dark bg-black border-bottom border-secondary' : 'navbar-dark bg-dark'} shadow-sm mb-4 py-3 transition-theme`}>
-      <div className="container">
+      {/* Changed to container-fluid for full width */}
+      <div className="container-fluid px-4">
         <Link className="navbar-brand fw-bold text-info" to="/">🎓 CampusPulse</Link>
         <div className="d-flex gap-2 align-items-center">
           <Link className="btn btn-outline-light btn-sm px-3" to="/">Home</Link>
@@ -79,7 +80,7 @@ function Navigation() {
 
 export default function App() {
   return (
-    <Router>
+    <>
       <style>{`
         :root {
           --bg-color: #f4f7f6;
@@ -141,7 +142,8 @@ export default function App() {
       `}</style>
 
       <Navigation />
-      <div className="container pb-5">
+      {/* Changed to container-fluid for full width */}
+      <div className="container-fluid px-4 pb-5">
         <Routes>
           <Route path="/" element={<EventFeed />} />
           <Route path="/login" element={<Login />} />
@@ -149,6 +151,6 @@ export default function App() {
           <Route path="/dashboard" element={<OrganizerDashboard />} />
         </Routes>
       </div>
-    </Router>
+    </>
   );
 }

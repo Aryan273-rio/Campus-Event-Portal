@@ -1,21 +1,47 @@
+
 import os
-from motor.motor_asyncio import AsyncIOMotorClient
-from dotenv import load_dotenv
+from pathlib import Path
+
 import certifi
+from dotenv import load_dotenv
+from motor.motor_asyncio import AsyncIOMotorClient
 
-load_dotenv()
+# Load .env from the backend directory
+BASE_DIR = Path(__file__).resolve().parent
+load_dotenv(BASE_DIR / ".env")
 
-MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
+# MongoDB connection string
+MONGO_URI = os.getenv("MONGO_URI")
 
-# Inject certifi to fix the SSL Handshake error
-client = AsyncIOMotorClient(MONGO_URI, tlsCAFile=certifi.where())
+if not MONGO_URI:
+    raise ValueError("MONGO_URI is missing from the .env file")
+
+# Create one MongoDB client
+client = AsyncIOMotorClient(
+    MONGO_URI,
+    tlsCAFile=certifi.where(),
+    serverSelectionTimeoutMS=10000
+)
 
 # Database
-db = client.college_events_db
+db = client["campus_event_db"]
 
 # Collections
-events_collection = db.get_collection("events")
-registrations_collection = db.get_collection("registrations")
+users_collection = db["users"]
+events_collection = db["events"]
+registrations_collection = db["registrations"]
+
+
+# MongoDB connection test
+async def check_database_connection():
+    await client.admin.command("ping")
+    print("MongoDB connected successfully!")
+
+
+# Close connection
+async def close_database_connection():
+    client.close()
+
 
 # Helper to format MongoDB document IDs
 def parse_mongo_id(document: dict) -> dict:

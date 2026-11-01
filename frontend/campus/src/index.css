@@ -55,7 +55,7 @@ body {
 }
 
 #root {
-  width: 1126px;
+  width: 100%; /* Changed from 1126px to 100% to allow full screen width */
   max-width: 100%;
   margin: 0 auto;
   text-align: center;

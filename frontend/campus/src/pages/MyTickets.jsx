@@ -63,7 +63,7 @@ export default function MyTickets() {
         <p className="lead mb-0">Track your event tickets, attendance status, and claim exclusive perks!</p>
       </div>
 
-      {/* Points Summary Banner with Sports Included */}
+      {/* Points Summary Banner with Colored Categories */}
       <div className="card shadow-sm border-0 p-4 mb-4 rounded-4 bg-primary text-white">
         <div className="row align-items-center">
           <div className="col-md-5">
@@ -72,10 +72,10 @@ export default function MyTickets() {
           </div>
           <div className="col-md-7 text-md-end mt-3 mt-md-0">
             <div className="d-flex justify-content-md-end gap-2 flex-wrap">
-              <span className="badge bg-light text-dark p-2">💻 Tech: {profile.category_points?.Technical || 0} pts</span>
-              <span className="badge bg-light text-dark p-2">🎭 Cultural: {profile.category_points?.Cultural || 0} pts</span>
-              <span className="badge bg-light text-dark p-2">🛠️ Workshop: {profile.category_points?.Workshop || 0} pts</span>
-              <span className="badge bg-light text-dark p-2">⚽ Sports: {profile.category_points?.Sports || 0} pts</span>
+              <span className="badge bg-primary text-white border border-light p-2">💻 Tech: {profile.category_points?.Technical || 0} pts</span>
+              <span className="badge bg-danger text-white border border-light p-2">🎭 Cultural: {profile.category_points?.Cultural || 0} pts</span>
+              <span className="badge bg-warning text-dark border border-light p-2">🛠️ Workshop: {profile.category_points?.Workshop || 0} pts</span>
+              <span className="badge bg-success text-white border border-light p-2">⚽ Sports: {profile.category_points?.Sports || 0} pts</span>
             </div>
           </div>
         </div>
