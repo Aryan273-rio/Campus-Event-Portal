@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+motor
+pymongo
+certifi
+pyjwt
+google-generativeai
+python-dotenv
+pydantic
+pydantic[email]
