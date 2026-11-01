@@ -2,50 +2,66 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import QRCode from 'react-qr-code';
 import { Link } from 'react-router-dom';
+import Icon from '../components/Icon';
+import Modal from '../components/Modal';
+import PageHeader, { Stat } from '../components/PageHeader';
+import { toast } from '../components/Toast';
+
+const CATEGORIES = ['Technical', 'Cultural', 'Sports', 'Workshop'];
+const CAT_META = {
+  Technical: { pill: 'pill-tech', card: 'cat-tech', icon: 'code' },
+  Cultural: { pill: 'pill-cultural', card: 'cat-cultural', icon: 'music' },
+  Sports: { pill: 'pill-sports', card: 'cat-sports', icon: 'trophy' },
+  Workshop: { pill: 'pill-workshop', card: 'cat-workshop', icon: 'wrench' },
+};
+
+const fmtDate = (d) => new Date(d).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
 
 function CountdownTimer({ targetDate }) {
-  const [timeLeft, setTimeLeft] = useState('');
+  const compute = () => {
+    const diff = new Date(targetDate) - new Date();
+    if (diff <= 0) return { live: true, text: 'Happening now' };
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+    const minutes = Math.floor((diff / 1000 / 60) % 60);
+    return { live: false, text: `Starts in ${days}d ${hours}h ${minutes}m` };
+  };
+  const [state, setState] = useState(compute);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      const diff = new Date(targetDate) - new Date();
-      if (diff <= 0) {
-        setTimeLeft('🔴 Live / Happening Now');
-        clearInterval(interval);
-        return;
-      }
-      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
-      const minutes = Math.floor((diff / 1000 / 60) % 60);
-      setTimeLeft(`⏳ Starts in: ${days}d ${hours}h ${minutes}m`);
-    }, 1000);
+    const interval = setInterval(() => setState(compute()), 1000);
     return () => clearInterval(interval);
   }, [targetDate]);
 
-  return <div className="countdown-badge shadow-sm">{timeLeft}</div>;
+  return (
+    <div className={`countdown ${state.live ? 'live' : ''}`}>
+      <Icon name="clock" size={13} /> {state.text}
+    </div>
+  );
 }
 
 export default function EventFeed() {
   const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
-  
-  const [regData, setRegData] = useState({ 
-    student_name: '', 
-    student_email: '',
-    usn: '',
-    payment_method: 'Free'
-  });
+  const [submitting, setSubmitting] = useState(false);
+
+  const [regData, setRegData] = useState({ student_name: '', student_email: '', usn: '', payment_method: 'Free' });
   const [ticket, setTicket] = useState(null);
 
   const fetchEvents = async () => {
     try {
       const response = await axios.get('https://campus-event-portal-seven.vercel.app/events', { params: { search, category } });
       setEvents(response.data);
-    } catch (error) { console.error(error); }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { fetchEvents(); }, [search, category]);
@@ -60,221 +76,222 @@ export default function EventFeed() {
       student_name: currentUser.name || '',
       student_email: currentUser.email || '',
       usn: '',
-      payment_method: event.price > 0 ? 'UPI / QR' : 'Free'
+      payment_method: event.price > 0 ? 'UPI / QR' : 'Free',
     });
     setSelectedEvent(event);
   };
 
   const handleProceedToRegistration = (e) => {
     e.preventDefault();
-    setSelectedEvent(null);
-    if (selectedEvent.price > 0) {
-      setShowPaymentModal(true);
-    } else {
-      executeFinalRegistration('Free Event');
-    }
+    if (selectedEvent.price > 0) setShowPaymentModal(true);
+    else executeFinalRegistration('Free Event');
   };
 
   const executeFinalRegistration = async (method) => {
+    setSubmitting(true);
     try {
       const payload = { ...regData, payment_method: method };
       const response = await axios.post(`https://campus-event-portal-seven.vercel.app/events/${selectedEvent.id}/register`, payload);
       setTicket({ eventName: selectedEvent.title, studentName: regData.student_name, qrValue: response.data.registration_id });
       setShowPaymentModal(false);
       setSelectedEvent(null);
-      fetchEvents(); 
+      fetchEvents();
     } catch (error) {
-      alert(error.response?.data?.detail || 'Registration failed');
+      toast.error(error.response?.data?.detail || 'Registration failed');
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  const getCategoryColor = (cat) => {
-    switch(cat) {
-      case 'Technical': return 'bg-primary text-white fw-bold';
-      case 'Cultural': return 'bg-danger text-white fw-bold';
-      case 'Sports': return 'bg-success text-white fw-bold';
-      case 'Workshop': return 'bg-warning text-dark fw-bold';
-      default: return 'bg-secondary text-white fw-bold';
-    }
-  };
+  const closeRegistration = () => { setSelectedEvent(null); setShowPaymentModal(false); };
 
   const now = new Date();
-  const liveEvents = events.filter(e => new Date(e.date) <= now);
-  const upcomingEvents = events.filter(e => new Date(e.date) > now);
+  const liveEvents = events.filter((e) => new Date(e.date) <= now);
+  const upcomingEvents = events.filter((e) => new Date(e.date) > now);
+  const seatsLeft = events.reduce((sum, e) => sum + Math.max(0, e.max_capacity - e.registered_count), 0);
 
   const renderEventCard = (event) => {
     const isFull = event.registered_count >= event.max_capacity;
+    const pct = Math.min(100, Math.round((event.registered_count / event.max_capacity) * 100)) || 0;
+    const meta = CAT_META[event.category] || { pill: 'pill-default', card: '', icon: 'star' };
+    const left = Math.max(0, event.max_capacity - event.registered_count);
+
     return (
       <div key={event.id} className="col-md-6 col-lg-4">
-        <div className="card event-card h-100 shadow-sm p-4 d-flex flex-column border-top border-4 border-primary">
-          <div className="d-flex justify-content-between align-items-start mb-2">
-            <span className={`badge ${getCategoryColor(event.category)} px-3 py-2 rounded-pill shadow-sm`}>{event.category}</span>
-            <span className="badge bg-success px-3 py-1 fw-bold">₹ {event.price > 0 ? event.price : 'Free'}</span>
+        <article className={`event-card ${meta.card}`}>
+          <div className="event-card__top">
+            <span className={`pill ${meta.pill}`}><Icon name={meta.icon} size={12} /> {event.category}</span>
+            <span className={`price-tag ${event.price > 0 ? '' : 'free'}`}>{event.price > 0 ? `₹${event.price}` : 'Free'}</span>
           </div>
-          <h4 className="card-title fw-bold mt-2">{event.title}</h4>
-          <p className="card-text text-muted flex-grow-1 small">{event.description}</p>
-          
-          <div className="bg-light p-3 rounded-3 mb-3 small text-secondary">
-            <div>📅 <strong>Date:</strong> {new Date(event.date).toLocaleString()}</div>
-            <div>📍 <strong>Venue:</strong> {event.venue}</div>
-            <div className="mt-1">
-              👥 <strong>Registered:</strong> <span className="fw-bold">{event.registered_count} / {event.max_capacity}</span>
+
+          {new Date(event.date) > now && <CountdownTimer targetDate={event.date} />}
+          {new Date(event.date) <= now && <div className="countdown live"><span className="live-dot" style={{ width: 7, height: 7 }} /> Happening now</div>}
+
+          <h4 className="event-card__title">{event.title}</h4>
+          <p className="event-card__desc">{event.description}</p>
+
+          <div className="meta-list">
+            <div className="meta-row"><Icon name="calendar" /> <span>{fmtDate(event.date)}</span></div>
+            <div className="meta-row"><Icon name="pin" /> <span>{event.venue}</span></div>
+          </div>
+
+          <div className="capacity">
+            <div className="capacity__bar">
+              <div className={`capacity__fill ${isFull ? 'full' : pct >= 80 ? 'warn' : ''}`} style={{ width: `${pct}%` }} />
+            </div>
+            <div className="capacity__text">
+              <span><Icon name="users" size={12} /> {event.registered_count} / {event.max_capacity} registered</span>
+              <span>{isFull ? 'Sold out' : `${left} left`}</span>
             </div>
           </div>
 
-          <button 
-            className={`btn w-100 fw-bold py-2 ${isFull ? 'btn-secondary disabled' : 'btn-outline-primary'}`} 
+          <button
+            className={`btn w-100 ${isFull ? 'btn-soft' : 'btn-primary'}`}
+            disabled={isFull}
             onClick={() => !isFull && handleBookClick(event)}
           >
-            {isFull ? '🚫 Event Full' : (event.price > 0 ? `💳 Register & Pay ₹${event.price}` : '🎟️ Book Ticket')}
+            {isFull ? 'Event full' : event.price > 0 ? <><Icon name="card" /> Register · ₹{event.price}</> : <><Icon name="ticket" /> Get free ticket</>}
           </button>
-        </div>
+        </article>
       </div>
     );
   };
 
   return (
-    <div className="py-2">
-      <div className="dashboard-header text-center shadow">
-        <h1 className="fw-bold display-5">Explore Campus Events</h1>
-        <p className="lead mb-0">Discover exciting workshops, technical competitions, sports, and cultural fests.</p>
-      </div>
+    <div>
+      <PageHeader
+        eyebrow="Campus Events"
+        title="Discover what's happening on campus"
+        subtitle="Workshops, technical competitions, sports and cultural fests, all in one place."
+      >
+        <Stat value={events.length} label="Events" />
+        <Stat value={liveEvents.length} label="Live now" />
+        <Stat value={seatsLeft} label="Seats open" />
+      </PageHeader>
 
-      <div className="row mb-5 p-3 rounded-4 shadow-sm align-items-center" style={{ background: 'var(--card-bg)', border: '1px solid rgba(0,0,0,0.08)' }}>
-        <div className="col-md-8 mb-3 mb-md-0">
-          <div className="input-group input-group-lg">
-            <span className="input-group-text bg-transparent border-end-0 text-muted ps-3">🔍</span>
-            <input 
-              type="text" 
-              className="form-control border-start-0 ps-2 bg-transparent shadow-none" 
-              placeholder="Search events by name..." 
-              value={search} 
-              onChange={(e) => setSearch(e.target.value)} 
-            />
-          </div>
+      <div className="surface toolbar">
+        <div className="search-box">
+          <Icon name="search" size={17} />
+          <input type="text" className="form-control" placeholder="Search events by name…" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Search events" />
         </div>
-        <div className="col-md-4">
-          <div className="input-group input-group-lg">
-            <span className="input-group-text bg-transparent border-end-0 ps-3">📂</span>
-            <select 
-              className="form-select border-start-0 ps-2 bg-transparent shadow-none" 
-              value={category} 
-              onChange={(e) => setCategory(e.target.value)}
-            >
-              <option value="">All Categories</option>
-              <option value="Technical">Technical</option>
-              <option value="Cultural">Cultural</option>
-              <option value="Sports">Sports</option>
-              <option value="Workshop">Workshop</option>
-            </select>
-          </div>
+        <div className="chips" role="group" aria-label="Filter by category">
+          <button className={`chip ${category === '' ? 'active' : ''}`} onClick={() => setCategory('')}>All</button>
+          {CATEGORIES.map((c) => (
+            <button key={c} className={`chip ${category === c ? 'active' : ''}`} onClick={() => setCategory(c)}>
+              <Icon name={CAT_META[c].icon} size={13} /> {c}
+            </button>
+          ))}
         </div>
       </div>
 
-      {liveEvents.length > 0 && (
-        <div className="mb-5">
-          <h3 className="fw-bold text-danger mb-4 d-flex align-items-center gap-2">
-            <span className="spinner-grow spinner-grow-sm text-danger"></span> Live & Ongoing Events
-          </h3>
-          <div className="row g-4">
-            {liveEvents.map(renderEventCard)}
+      {loading ? (
+        <div className="empty-state"><div className="spinner-border text-primary" role="status" /><p className="mt-3">Loading events…</p></div>
+      ) : (
+        <>
+          {liveEvents.length > 0 && (
+            <>
+              <div className="section-head">
+                <h3 className="section-title"><span className="live-dot" /> Live &amp; ongoing <span className="section-count">{liveEvents.length}</span></h3>
+              </div>
+              <div className="row g-4">{liveEvents.map(renderEventCard)}</div>
+            </>
+          )}
+
+          <div className="section-head">
+            <h3 className="section-title"><Icon name="calendar" size={18} /> Upcoming events <span className="section-count">{upcomingEvents.length}</span></h3>
           </div>
-        </div>
+          {upcomingEvents.length > 0 ? (
+            <div className="row g-4">{upcomingEvents.map(renderEventCard)}</div>
+          ) : (
+            liveEvents.length === 0 && (
+              <div className="empty-state surface">
+                <div className="empty-state__icon"><Icon name="search" size={24} /></div>
+                <h5>No events found</h5>
+                <p>Try a different search term or category.</p>
+              </div>
+            )
+          )}
+        </>
       )}
 
-      <div className="mb-5">
-        <h3 className="fw-bold mb-4">🚀 Upcoming Events</h3>
-        {upcomingEvents.length > 0 ? (
-          <div className="row g-4">
-            {upcomingEvents.map(renderEventCard)}
-          </div>
-        ) : (
-          liveEvents.length === 0 && <div className="text-center text-muted py-5"><h5>No events found matching your search.</h5></div>
-        )}
-      </div>
-
+      {/* Login required */}
       {showLoginPrompt && (
-        <div className="modal-overlay">
-          <div className="modal-custom shadow-lg text-center">
-            <h3 className="fw-bold text-danger mb-2">🔒 Authentication Required</h3>
-            <p className="text-muted mb-4">You need to be signed into your account to register and book tickets for college events.</p>
-            <div className="d-flex flex-column gap-2">
-              <Link to="/login" className="btn btn-primary fw-bold py-2">Go to Login / Sign Up</Link>
-              <button className="btn btn-light py-2" onClick={() => setShowLoginPrompt(false)}>Cancel</button>
-            </div>
+        <Modal size="sm" center onClose={() => setShowLoginPrompt(false)}>
+          <div className="modal-icon danger"><Icon name="lock" size={24} /></div>
+          <h4 className="mb-2">Sign in required</h4>
+          <p className="text-muted mb-4">You need to be signed in to register for campus events.</p>
+          <div className="d-grid gap-2">
+            <Link to="/login" className="btn btn-primary">Go to sign in</Link>
+            <button className="btn btn-soft" onClick={() => setShowLoginPrompt(false)}>Maybe later</button>
           </div>
-        </div>
+        </Modal>
       )}
 
-      {/* Step 1: Registration Details Modal */}
+      {/* Step 1: registration details */}
       {selectedEvent && !showPaymentModal && (
-        <div className="modal-overlay">
-          <div className="modal-custom shadow-lg">
-            <h3 className="fw-bold mb-1 text-primary">Register for {selectedEvent.title}</h3>
-            <p className="text-muted small mb-3">Fee: <strong className="text-success">₹ {selectedEvent.price > 0 ? selectedEvent.price : 'Free'}</strong></p>
-            <form onSubmit={handleProceedToRegistration}>
-              <div className="mb-3">
-                <label className="form-label fw-semibold">Full Name</label>
-                <input type="text" className="form-control" required value={regData.student_name} onChange={e => setRegData({...regData, student_name: e.target.value})} />
-              </div>
-              <div className="mb-3">
-                <label className="form-label fw-semibold">College Email</label>
-                <input type="email" className="form-control" required value={regData.student_email} onChange={e => setRegData({...regData, student_email: e.target.value})} />
-              </div>
-              <div className="mb-4">
-                <label className="form-label fw-semibold">USN (University Student Number)</label>
-                <input type="text" className="form-control" placeholder="e.g. 1BM23CS001" value={regData.usn} onChange={e => setRegData({...regData, usn: e.target.value})} />
-              </div>
-              <div className="d-flex gap-2">
-                <button type="submit" className="btn btn-success w-50 fw-bold py-2">
-                  {selectedEvent.price > 0 ? 'Proceed to Payment' : 'Confirm Registration'}
-                </button>
-                <button type="button" className="btn btn-light w-50 py-2" onClick={() => setSelectedEvent(null)}>Cancel</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Step 2: Secure Payment Modal (For Paid Events) */}
-      {showPaymentModal && selectedEvent && (
-        <div className="modal-overlay">
-          <div className="modal-custom shadow-lg text-center">
-            <h3 className="fw-bold text-dark mb-1">Secure Payment</h3>
-            <p className="text-muted small mb-3">Amount to Pay: <strong className="text-success fs-5">₹ {selectedEvent.price}</strong></p>
-            
-            <div className="bg-light p-3 rounded-3 border mb-4">
-              <p className="small text-muted mb-2">Scan QR code using Google Pay / PhonePe / Paytm</p>
-              {/* Mock QR code representing UPI gateway */}
-              <div className="d-flex justify-content-center mb-2">
-                <QRCode value={`upi://pay?pa=campuspulse@ybl&pn=CampusEventPortal&am=${selectedEvent.price}&cu=INR`} size={130} />
-              </div>
-              <span className="badge bg-secondary">UPI ID: campuspulse@ybl</span>
+        <Modal
+          title={`Register for ${selectedEvent.title}`}
+          subtitle={selectedEvent.price > 0 ? `Entry fee ₹${selectedEvent.price}` : 'This event is free to attend'}
+          onClose={closeRegistration}
+        >
+          <form onSubmit={handleProceedToRegistration}>
+            <div className="mb-3">
+              <label className="form-label">Full name</label>
+              <input type="text" className="form-control" required value={regData.student_name} onChange={(e) => setRegData({ ...regData, student_name: e.target.value })} />
             </div>
-
-            <div className="d-flex flex-column gap-2">
-              <button className="btn btn-success fw-bold py-2" onClick={() => executeFinalRegistration('UPI / QR')}>
-                ✅ Simulate Successful Payment
+            <div className="mb-3">
+              <label className="form-label">College email</label>
+              <input type="email" className="form-control" required value={regData.student_email} onChange={(e) => setRegData({ ...regData, student_email: e.target.value })} />
+            </div>
+            <div className="mb-4">
+              <label className="form-label">USN (University Student Number)</label>
+              <input type="text" className="form-control" placeholder="e.g. 1BM23CS001" value={regData.usn} onChange={(e) => setRegData({ ...regData, usn: e.target.value })} />
+            </div>
+            <div className="d-flex gap-2">
+              <button type="button" className="btn btn-soft flex-fill" onClick={closeRegistration}>Cancel</button>
+              <button type="submit" className="btn btn-primary flex-fill" disabled={submitting}>
+                {submitting && <span className="spinner-border spinner-border-sm" />}
+                {selectedEvent.price > 0 ? 'Continue to payment' : 'Confirm registration'}
               </button>
-              <button className="btn btn-outline-danger btn-sm" onClick={() => setShowPaymentModal(false)}>Cancel Payment</button>
             </div>
-          </div>
-        </div>
+          </form>
+        </Modal>
       )}
 
-      {ticket && (
-        <div className="modal-overlay">
-          <div className="modal-custom shadow-lg text-center">
-            <h2 className="text-success fw-bold mb-2">🎉 Registered Successfully!</h2>
-            <h5 className="text-muted mb-4">{ticket.eventName}</h5>
-            <div className="bg-light p-4 d-inline-block rounded-4 border mb-3 shadow-sm">
-              <QRCode value={ticket.qrValue} size={160} />
-            </div>
-            <p className="text-secondary small">Pass issued to: <strong>{ticket.studentName}</strong></p>
-            <p className="text-danger small fw-semibold">Take a screenshot of this QR code for gate check-in.</p>
-            <button className="btn btn-primary w-100 py-2 fw-bold mt-2" onClick={() => setTicket(null)}>Done</button>
+      {/* Step 2: payment (paid events) */}
+      {showPaymentModal && selectedEvent && (
+        <Modal
+          center
+          size="sm"
+          title="Complete payment"
+          subtitle={`Amount due: ₹${selectedEvent.price}`}
+          onClose={() => setShowPaymentModal(false)}
+        >
+          <p className="text-muted small mb-3">Scan with Google Pay, PhonePe or Paytm</p>
+          <div className="qr-frame mb-3">
+            <QRCode value={`upi://pay?pa=campuspulse@ybl&pn=CampusEventPortal&am=${selectedEvent.price}&cu=INR`} size={150} />
           </div>
-        </div>
+          <div className="mb-4"><span className="pill pill-default">UPI ID · campuspulse@ybl</span></div>
+          <div className="d-grid gap-2">
+            <button className="btn btn-success" disabled={submitting} onClick={() => executeFinalRegistration('UPI / QR')}>
+              {submitting ? <span className="spinner-border spinner-border-sm" /> : <Icon name="checkCircle" />} I've paid · Confirm
+            </button>
+            <button className="btn btn-ghost-danger btn-sm" onClick={() => setShowPaymentModal(false)}>Cancel payment</button>
+          </div>
+        </Modal>
+      )}
+
+      {/* Success ticket */}
+      {ticket && (
+        <Modal size="sm" center onClose={() => setTicket(null)}>
+          <div className="modal-icon success"><Icon name="check" size={26} /></div>
+          <h4 className="mb-1">You're registered!</h4>
+          <p className="text-muted mb-3">{ticket.eventName}</p>
+          <div className="qr-frame mb-3"><QRCode value={ticket.qrValue} size={160} /></div>
+          <p className="small mb-1">Pass issued to <strong>{ticket.studentName}</strong></p>
+          <p className="small text-muted mb-4">Screenshot this QR code for gate check-in. You can also find it under My Tickets.</p>
+          <button className="btn btn-primary w-100" onClick={() => setTicket(null)}>Done</button>
+        </Modal>
       )}
     </div>
   );
