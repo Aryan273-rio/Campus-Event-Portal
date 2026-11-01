@@ -42,6 +42,7 @@ function CountdownTimer({ targetDate }) {
 
 export default function EventFeed() {
   const [events, setEvents] = useState([]);
+  const [myTickets, setMyTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
@@ -64,7 +65,22 @@ export default function EventFeed() {
     }
   };
 
-  useEffect(() => { fetchEvents(); }, [search, category]);
+  const fetchUserTickets = async () => {
+    const currentUser = JSON.parse(localStorage.getItem('user'));
+    if (currentUser?.email) {
+      try {
+        const response = await axios.get(`https://campus-event-portal-seven.vercel.app/tickets/${currentUser.email}`);
+        setMyTickets(response.data.map(t => t.event_id));
+      } catch (error) {
+        console.error(error);
+      }
+    }
+  };
+
+  useEffect(() => { 
+    fetchEvents(); 
+    fetchUserTickets();
+  }, [search, category]);
 
   const handleBookClick = (event) => {
     const currentUser = JSON.parse(localStorage.getItem('user'));
@@ -93,6 +109,7 @@ export default function EventFeed() {
       const payload = { ...regData, payment_method: method };
       const response = await axios.post(`https://campus-event-portal-seven.vercel.app/events/${selectedEvent.id}/register`, payload);
       setTicket({ eventName: selectedEvent.title, studentName: regData.student_name, qrValue: response.data.registration_id });
+      setMyTickets(prev => [...prev, selectedEvent.id]); // Instantly update UI block
       setShowPaymentModal(false);
       setSelectedEvent(null);
       fetchEvents();
@@ -112,6 +129,7 @@ export default function EventFeed() {
 
   const renderEventCard = (event) => {
     const isFull = event.registered_count >= event.max_capacity;
+    const isRegistered = myTickets.includes(event.id);
     const pct = Math.min(100, Math.round((event.registered_count / event.max_capacity) * 100)) || 0;
     const meta = CAT_META[event.category] || { pill: 'pill-default', card: '', icon: 'star' };
     const left = Math.max(0, event.max_capacity - event.registered_count);
@@ -146,11 +164,11 @@ export default function EventFeed() {
           </div>
 
           <button
-            className={`btn w-100 ${isFull ? 'btn-soft' : 'btn-primary'}`}
-            disabled={isFull}
-            onClick={() => !isFull && handleBookClick(event)}
+            className={`btn w-100 ${isFull || isRegistered ? 'btn-soft' : 'btn-primary'}`}
+            disabled={isFull || isRegistered}
+            onClick={() => !isFull && !isRegistered && handleBookClick(event)}
           >
-            {isFull ? 'Event full' : event.price > 0 ? <><Icon name="card" /> Register · ₹{event.price}</> : <><Icon name="ticket" /> Get free ticket</>}
+            {isRegistered ? 'Already Registered' : isFull ? 'Event full' : event.price > 0 ? <><Icon name="card" /> Register · ₹{event.price}</> : <><Icon name="ticket" /> Get free ticket</>}
           </button>
         </article>
       </div>
@@ -214,7 +232,6 @@ export default function EventFeed() {
         </>
       )}
 
-      {/* Login required */}
       {showLoginPrompt && (
         <Modal size="sm" center onClose={() => setShowLoginPrompt(false)}>
           <div className="modal-icon danger"><Icon name="lock" size={24} /></div>
@@ -227,7 +244,6 @@ export default function EventFeed() {
         </Modal>
       )}
 
-      {/* Step 1: registration details */}
       {selectedEvent && !showPaymentModal && (
         <Modal
           title={`Register for ${selectedEvent.title}`}
@@ -258,7 +274,6 @@ export default function EventFeed() {
         </Modal>
       )}
 
-      {/* Step 2: payment (paid events) */}
       {showPaymentModal && selectedEvent && (
         <Modal
           center
@@ -281,7 +296,6 @@ export default function EventFeed() {
         </Modal>
       )}
 
-      {/* Success ticket */}
       {ticket && (
         <Modal size="sm" center onClose={() => setTicket(null)}>
           <div className="modal-icon success"><Icon name="check" size={26} /></div>

@@ -51,7 +51,8 @@ function Navigation() {
           <NavLink to="/" end className={linkClass}>
             <Icon name="home" /> <span className="nav-label">Events</span>
           </NavLink>
-          {user?.role === 'student' && (
+          {/* My Tickets is now available to all logged-in users */}
+          {user && (
             <NavLink to="/tickets" className={linkClass}>
               <Icon name="ticket" /> <span className="nav-label">My Tickets</span>
             </NavLink>

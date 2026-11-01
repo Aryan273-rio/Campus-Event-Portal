@@ -58,7 +58,6 @@ export default function MyTickets() {
         multiple_use: multipleUse,
       });
       toast.success(res.data.message);
-      // Single-use rewards are hidden immediately
       if (!multipleUse) setRedeemedRewards((prev) => [...prev, rewardName]);
       fetchProfile();
     } catch (err) {
@@ -83,7 +82,7 @@ export default function MyTickets() {
   return (
     <div>
       <PageHeader
-        eyebrow="Student Portal"
+        eyebrow="My Portal"
         title="My tickets & rewards"
         subtitle="Track your event passes, attendance status and claim exclusive perks."
       />

@@ -41,7 +41,6 @@ def hash_password(password: str) -> str:
 def send_confirmation_email(email: str, event_name: str, reg_id: str):
     print(f"📧 BACKGROUND TASK: Email sent to {email} for '{event_name}'. Ticket ID: {reg_id}")
 
-
 # --- AUTH ENDPOINTS ---
 @app.post("/auth/signup", status_code=201)
 async def signup(user: UserRegister):
@@ -83,7 +82,6 @@ async def login(creds: UserLogin):
         "name": user["name"], 
         "email": user["email"]
     }
-
 
 # --- EVENT ENDPOINTS ---
 @app.post("/events/", status_code=201)
@@ -149,7 +147,6 @@ async def delete_event(event_id: str):
         return {"message": "Event deleted successfully"}
     raise HTTPException(status_code=404, detail="Event not found")
 
-
 # --- REGISTRATIONS & TICKETS ---
 @app.post("/events/{event_id}/register", status_code=201)
 async def register_for_event(event_id: str, reg_data: RegistrationSchema, background_tasks: BackgroundTasks):
@@ -213,7 +210,6 @@ async def check_in_student(event_id: str, registration_id: str):
     event = await events_collection.find_one({"_id": ObjectId(event_id)})
     category = event.get("category", "General") if event else "General"
     
-    # Updated Points mapping
     points_awarded = (
         50 if category == "Technical" 
         else (40 if category == "Workshop" 
@@ -262,8 +258,6 @@ async def redeem_reward(data: RedeemRequest):
         raise HTTPException(status_code=400, detail="Insufficient points to redeem this reward")
     
     new_points = current_points - data.reward_cost
-    
-    # Handle multiple_use fallback just in case the field isn't in older requests
     multiple_use = getattr(data, "multiple_use", False)
     
     history_entry = {
@@ -274,7 +268,7 @@ async def redeem_reward(data: RedeemRequest):
     }
     
     history = user.get("redemption_history", [])
-    history.insert(0, history_entry)  # Latest entry at top
+    history.insert(0, history_entry) 
     
     await users_collection.update_one(
         {"email": data.email},
@@ -299,8 +293,6 @@ async def get_student_tickets(email: str):
             })
     return tickets
 
-
-# --- AI DESCRIPTION GENERATOR ---
 @app.get("/generate-description/")
 async def generate_ai_description(title: str, category: str):
     if not GEMINI_API_KEY:
