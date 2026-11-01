@@ -117,7 +117,7 @@ Create a `.env` file inside the backend directory.
 ```env
 PORT=5000
 MONGO_URI=your_mongodb_connection_string
-JWT_SECRET=your_secret_key
+GEMINI_API_KEY=your_secret_key
 ```
 
 Replace the MongoDB connection string with your local MongoDB URI or MongoDB Atlas connection string.
