@@ -40,15 +40,14 @@ function Navigation() {
   };
 
   return (
-    <nav className={`navbar navbar-expand-lg ${darkMode ? 'navbar-dark bg-black border-bottom border-secondary' : 'navbar-dark bg-dark'} shadow-sm mb-4 py-3 transition-theme`}>
-      {/* Changed to container-fluid for full width */}
+    <nav className={`navbar navbar-expand-lg ${darkMode ? 'navbar-dark bg-dark border-bottom border-secondary' : 'navbar-dark bg-dark'} shadow-sm mb-4 py-3 transition-theme`} style={{ background: darkMode ? '#18181b !important' : '#0f172a !important' }}>
       <div className="container-fluid px-4">
-        <Link className="navbar-brand fw-bold text-info" to="/">🎓 CampusPulse</Link>
+        <Link className="navbar-brand fw-bold text-info fs-4" to="/">🎓 CampusPulse</Link>
         <div className="d-flex gap-2 align-items-center">
-          <Link className="btn btn-outline-light btn-sm px-3" to="/">Home</Link>
+          <Link className="btn btn-outline-light btn-sm px-3 fw-semibold" to="/">Home</Link>
           
           {user?.role === 'student' && (
-            <Link className="btn btn-outline-success btn-sm px-3" to="/tickets">My Tickets</Link>
+            <Link className="btn btn-outline-success btn-sm px-3 fw-semibold" to="/tickets">My Tickets</Link>
           )}
           
           {user?.role === 'organizer' && (
@@ -57,20 +56,20 @@ function Navigation() {
 
           {/* Dark Mode Toggle Button */}
           <button 
-            className="btn btn-outline-secondary btn-sm px-3 text-white" 
+            className="btn btn-outline-secondary btn-sm px-3 text-white fw-semibold" 
             onClick={() => setDarkMode(!darkMode)}
             title="Toggle Dark/Light Mode"
           >
-            {darkMode ? '☀️ Light Mode' : '🌙 Dark Mode'}
+            {darkMode ? '☀️ Light' : '🌙 Dark'}
           </button>
           
           {user ? (
             <div className="d-flex align-items-center ms-2 gap-2">
               <span className="badge bg-secondary p-2">👤 {user.name}</span>
-              <button className="btn btn-danger btn-sm px-3" onClick={handleLogout}>Sign Out</button>
+              <button className="btn btn-danger btn-sm px-3 fw-semibold" onClick={handleLogout}>Sign Out</button>
             </div>
           ) : (
-            <Link className="btn btn-primary btn-sm px-4 ms-2" to="/login">Login / Sign Up</Link>
+            <Link className="btn btn-primary btn-sm px-4 ms-2 fw-bold" to="/login">Login / Sign Up</Link>
           )}
         </div>
       </div>
@@ -83,66 +82,142 @@ export default function App() {
     <>
       <style>{`
         :root {
-          --bg-color: #f4f7f6;
-          --text-color: #212529;
+          --bg-color: #f8fafc;
+          --text-color: #1e293b;
           --card-bg: #ffffff;
           --modal-bg: #ffffff;
-          --input-bg: #f8f9fa;
-          --input-text: #212529;
+          --input-bg: #ffffff;
+          --input-text: #1e293b;
+          --border-color: #e2e8f0;
+          --shadow-subtle: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+          --shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
         }
 
         [data-theme="dark"] {
-          --bg-color: #121212;
-          --text-color: #e0e0e0;
-          --card-bg: #1e1e1e;
-          --modal-bg: #1e1e1e;
-          --input-bg: #2d2d2d;
-          --input-text: #ffffff;
+          --bg-color: #090d16;
+          --text-color: #f1f5f9;
+          --card-bg: #111827;
+          --modal-bg: #111827;
+          --input-bg: #1f2937;
+          --input-text: #f1f5f9;
+          --border-color: #374151;
+          --shadow-subtle: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+          --shadow-hover: 0 10px 20px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
         }
 
         body { 
           background-color: var(--bg-color); 
           color: var(--text-color);
-          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-          transition: background-color 0.3s ease, color 0.3s ease;
+          font-family: 'Inter', system-ui, -apple-system, sans-serif; 
+          transition: background-color 0.25s ease, color 0.25s ease;
         }
 
         .event-card { 
           background: var(--card-bg) !important;
           color: var(--text-color) !important;
-          transition: transform 0.2s ease-in-out, box-shadow 0.2s; 
-          border: none; 
-          border-radius: 12px; 
+          transition: transform 0.2s ease, box-shadow 0.2s ease; 
+          border: 1px solid var(--border-color) !important; 
+          border-radius: 16px; 
           overflow: hidden; 
+          box-shadow: var(--shadow-subtle);
         }
-        .event-card:hover { transform: translateY(-5px); box-shadow: 0 12px 24px rgba(0,0,0,0.2); }
+        .event-card:hover { 
+          transform: translateY(-4px); 
+          box-shadow: var(--shadow-hover); 
+        }
         
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1050; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
-        .modal-custom { background: var(--modal-bg); color: var(--text-color); padding: 2.5rem; border-radius: 16px; width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
+        .modal-overlay { 
+          position: fixed; 
+          top: 0; 
+          left: 0; 
+          width: 100%; 
+          height: 100%; 
+          background: rgba(0, 0, 0, 0.6); 
+          z-index: 1050; 
+          display: flex; 
+          align-items: center; 
+          justify-content: center; 
+          backdrop-filter: blur(6px); 
+        }
         
-        .dashboard-header { background: linear-gradient(135deg, #4e54c8, #8f94fb); color: white; padding: 2.5rem; border-radius: 16px; margin-bottom: 2rem; box-shadow: 0 8px 20px rgba(78,84,200,0.2); }
+        .modal-custom { 
+          background: var(--modal-bg); 
+          color: var(--text-color); 
+          padding: 2.5rem; 
+          border-radius: 20px; 
+          width: 90%; 
+          max-width: 520px; 
+          max-height: 90vh; 
+          overflow-y: auto; 
+          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
+          border: 1px solid var(--border-color);
+        }
         
-        .countdown-badge { background: #fff3cd; color: #856404; font-weight: 600; font-size: 0.75rem; padding: 5px 10px; border-radius: 20px; display: inline-block; border: 1px solid #ffeeba; }
-        [data-theme="dark"] .countdown-badge { background: #332701; color: #ffda6a; border-color: #664d03; }
+        .dashboard-header { 
+          background: linear-gradient(135deg, #3b82f6, #6366f1); 
+          color: white; 
+          padding: 2.5rem; 
+          border-radius: 20px; 
+          margin-bottom: 2rem; 
+          box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.3); 
+        }
+        
+        .countdown-badge { 
+          background: #fef3c7; 
+          color: #92400e; 
+          font-weight: 600; 
+          font-size: 0.75rem; 
+          padding: 6px 12px; 
+          border-radius: 20px; 
+          display: inline-block; 
+          border: 1px solid #fde68a; 
+        }
+        [data-theme="dark"] .countdown-badge { 
+          background: #451a03; 
+          color: #fcd34d; 
+          border-color: #78350f; 
+        }
 
-        [data-theme="dark"] .form-control, [data-theme="dark"] .form-select {
+        /* Form Controls & Dropdowns Fix for Dark Mode */
+        .form-control, .form-select {
           background-color: var(--input-bg);
           color: var(--input-text);
-          border-color: #444;
+          border-color: var(--border-color);
+          border-radius: 10px;
+          padding: 0.75rem 1rem;
         }
-        [data-theme="dark"] .form-control:focus, [data-theme="dark"] .form-select:focus {
+        .form-control:focus, .form-select:focus {
           background-color: var(--input-bg);
           color: var(--input-text);
-          border-color: #0d6efd;
+          border-color: #3b82f6;
+          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
         }
-        [data-theme="dark"] .bg-light { background-color: #252525 !important; color: #fff !important; }
-        [data-theme="dark"] .text-muted { color: #aaa !important; }
-        [data-theme="dark"] .table { color: #fff; }
-        [data-theme="dark"] .table-light { background-color: #2a2a2a; color: #fff; }
+
+        /* Fix Dropdown options camouflage in dark mode */
+        [data-theme="dark"] select option {
+          background-color: #1f2937;
+          color: #f1f5f9;
+          padding: 10px;
+        }
+
+        [data-theme="dark"] .bg-light { 
+          background-color: #1a2234 !important; 
+          color: #f1f5f9 !important; 
+          border-color: var(--border-color) !important;
+        }
+        [data-theme="dark"] .text-muted { 
+          color: #94a3b8 !important; 
+        }
+        [data-theme="dark"] .table { 
+          color: var(--text-color); 
+        }
+        [data-theme="dark"] .table-light { 
+          background-color: #1f2937; 
+          color: #f1f5f9; 
+        }
       `}</style>
 
       <Navigation />
-      {/* Changed to container-fluid for full width */}
       <div className="container-fluid px-4 pb-5">
         <Routes>
           <Route path="/" element={<EventFeed />} />
