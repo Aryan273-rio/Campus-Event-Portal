@@ -43,7 +43,7 @@ export default function EventFeed() {
 
   const fetchEvents = async () => {
     try {
-      const response = await axios.get('http://localhost:8000/events', { params: { search, category } });
+      const response = await axios.get('https://campus-event-portal-seven.vercel.app/events', { params: { search, category } });
       setEvents(response.data);
     } catch (error) { console.error(error); }
   };
@@ -78,7 +78,7 @@ export default function EventFeed() {
   const executeFinalRegistration = async (method) => {
     try {
       const payload = { ...regData, payment_method: method };
-      const response = await axios.post(`http://localhost:8000/events/${selectedEvent.id}/register`, payload);
+      const response = await axios.post(`https://campus-event-portal-seven.vercel.app/events/${selectedEvent.id}/register`, payload);
       setTicket({ eventName: selectedEvent.title, studentName: regData.student_name, qrValue: response.data.registration_id });
       setShowPaymentModal(false);
       setSelectedEvent(null);

@@ -12,7 +12,7 @@ export default function OrganizerDashboard() {
 
   const fetchEvents = async () => {
     try {
-      const res = await axios.get('http://localhost:8000/events/');
+      const res = await axios.get('https://campus-event-portal-seven.vercel.app/events');
       setEvents(res.data);
     } catch (err) { console.error(err); }
   };
@@ -22,7 +22,7 @@ export default function OrganizerDashboard() {
   const handleAiGenerate = async () => {
     if (!form.title) { alert('Please enter a title first'); return; }
     try {
-      const res = await axios.get('http://localhost:8000/generate-description/', { params: { title: form.title, category: form.category } });
+      const res = await axios.get('https://campus-event-portal-seven.vercel.app/generate-description/', { params: { title: form.title, category: form.category } });
       setForm(prev => ({ ...prev, description: res.data.description }));
     } catch (err) { console.error(err); }
   };
@@ -31,11 +31,11 @@ export default function OrganizerDashboard() {
     e.preventDefault();
     try {
       if (editingId) {
-        await axios.put(`http://localhost:8000/events/${editingId}`, form);
+        await axios.put(`https://campus-event-portal-seven.vercel.app/events/${editingId}`, form);
         alert('Event updated successfully!');
         setEditingId(null);
       } else {
-        await axios.post('http://localhost:8000/events/', form);
+        await axios.post('https://campus-event-portal-seven.vercel.app/events', form);
         alert('Event published successfully!');
       }
       setForm({ title: '', description: '', date: '', venue: '', category: 'Technical', max_capacity: 50, price: 0 });
@@ -59,7 +59,7 @@ export default function OrganizerDashboard() {
 
   const handleDelete = async (id) => {
     if (confirm('Are you sure you want to delete this event?')) {
-      await axios.delete(`http://localhost:8000/events/${id}`);
+      await axios.delete(`https://campus-event-portal-seven.vercel.app/events/${id}`);
       fetchEvents();
     }
   };
@@ -72,13 +72,13 @@ export default function OrganizerDashboard() {
 
   const fetchParticipants = async (eventId, query = '') => {
     try {
-      const res = await axios.get(`http://localhost:8000/events/${eventId}/participants`, { params: { search: query } });
+      const res = await axios.get(`https://campus-event-portal-seven.vercel.app/events/${eventId}/participants`, { params: { search: query } });
       setParticipants(res.data);
     } catch (err) { console.error(err); }
   };
 
   const handleCheckIn = async (eventId, regId) => {
-    await axios.put(`http://localhost:8000/events/${eventId}/checkin/${regId}`);
+    await axios.put(`https://campus-event-portal-seven.vercel.app/events/${eventId}/checkin/${regId}`);
     fetchParticipants(selectedEventId, rosterSearch);
   };
 
@@ -146,16 +146,7 @@ export default function OrganizerDashboard() {
           <div className="row">
             <div className="col-md-6 mb-3">
               <label className="form-label fw-semibold">Date & Time</label>
-              {/* Added onClick to force the calendar to pop up when the field is clicked */}
-              <input 
-                type="datetime-local" 
-                className="form-control" 
-                style={{ cursor: 'pointer' }}
-                required 
-                value={form.date} 
-                onChange={e => setForm({...form, date: e.target.value})}
-                onClick={(e) => e.target.showPicker && e.target.showPicker()} 
-              />
+              <input type="datetime-local" className="form-control" required value={form.date} onChange={e => setForm({...form, date: e.target.value})} />
             </div>
             <div className="col-md-6 mb-3">
               <label className="form-label fw-semibold">Venue</label>

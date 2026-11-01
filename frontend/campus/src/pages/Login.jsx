@@ -11,11 +11,11 @@ export default function Login() {
     e.preventDefault();
     try {
       if (isSignup) {
-        await axios.post('http://localhost:8000/auth/signup', formData);
+        await axios.post('https://campus-event-portal-seven.vercel.app/auth/signup', formData);
         alert('Account created! Please log in.');
         setIsSignup(false);
       } else {
-        const res = await axios.post('http://localhost:8000/auth/login', { email: formData.email, password: formData.password });
+        const res = await axios.post('https://campus-event-portal-seven.vercel.app/auth/login', { email: formData.email, password: formData.password });
         localStorage.setItem('user', JSON.stringify(res.data));
         
         // Trigger global auth event so the navbar instantly detects the logged-in user
